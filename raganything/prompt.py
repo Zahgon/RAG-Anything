@@ -22,11 +22,11 @@ class PromptRegistry:
 
     def swap(self, prompts: dict[str, Any]) -> None:
         """Atomically replace the active prompt snapshot."""
-        self._data = dict(prompts)
+        pass
 
     def snapshot(self) -> dict[str, Any]:
         """Return a copy of the active prompt set."""
-        return dict(self._data)
+        pass
 
     def __getitem__(self, key: str) -> Any:
         return self._data[key]
@@ -47,16 +47,16 @@ class PromptRegistry:
         return len(self._data)
 
     def get(self, key: str, default: Any = None) -> Any:
-        return self._data.get(key, default)
+        pass
 
     def keys(self) -> KeysView[str]:
-        return self._data.keys()
+        pass
 
     def items(self) -> ItemsView[str, Any]:
-        return self._data.items()
+        pass
 
     def values(self) -> ValuesView[Any]:
-        return self._data.values()
+        pass
 
     def __repr__(self) -> str:
         return f"PromptRegistry({self._data!r})"

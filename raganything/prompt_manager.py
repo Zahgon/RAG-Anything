@@ -42,23 +42,12 @@ _PROMPTS_LOCK = threading.RLock()
 
 def _normalize_language_code(language_code: str) -> str:
     """Normalize a language code to canonical form."""
-    if not isinstance(language_code, str):
-        raise TypeError(
-            f"language code must be a non-empty string, got {type(language_code).__name__}"
-        )
-    normalized = language_code.strip().lower()
-    if not normalized:
-        raise ValueError("language code must be a non-empty string")
-    return normalized
+    pass
 
 
 def _lazy_load_language(lang: str) -> Dict[str, Any]:
     """Lazily load prompt templates for a language."""
-    if lang == "zh":
-        from raganything.prompts_zh import PROMPTS_ZH
-
-        return PROMPTS_ZH
-    return {}
+    pass
 
 
 def register_prompt_language(language_code: str, prompts: Dict[str, Any]) -> None:
@@ -76,9 +65,7 @@ def register_prompt_language(language_code: str, prompts: Dict[str, Any]) -> Non
         my_prompts = {"IMAGE_ANALYSIS_SYSTEM": "...in Japanese..."}
         register_prompt_language("ja", my_prompts)
     """
-    lang = _normalize_language_code(language_code)
-    _PROMPT_LANGUAGES[lang] = dict(prompts)
-    logger.info("Registered prompt language '%s' with %d templates", lang, len(prompts))
+    pass
 
 
 def set_prompt_language(language: str) -> None:
@@ -95,54 +82,17 @@ def set_prompt_language(language: str) -> None:
         ValueError: If the language is not registered and cannot be
                     loaded automatically.
     """
-    global _current_language
-
-    lang = _normalize_language_code(language)
-
-    # Try lazy-loading if not already registered
-    if lang not in _PROMPT_LANGUAGES:
-        loaded = _lazy_load_language(lang)
-        if loaded:
-            _PROMPT_LANGUAGES[lang] = loaded
-        else:
-            available = ", ".join(sorted(_PROMPT_LANGUAGES.keys()))
-            raise ValueError(
-                f"Unknown prompt language '{language}'. "
-                f"Available: {available}. "
-                f"Register new languages with register_prompt_language()."
-            )
-
-    target_prompts = _PROMPT_LANGUAGES[lang]
-
-    # Compute the resolved prompt set first, then atomically swap the active
-    # prompt snapshot under a lock so readers never observe a cleared/partial
-    # dictionary.
-    resolved: Dict[str, Any] = {}
-    for key in _ENGLISH_PROMPTS:
-        if key in target_prompts:
-            resolved[key] = target_prompts[key]
-        else:
-            resolved[key] = _ENGLISH_PROMPTS[key]
-
-    with _PROMPTS_LOCK:
-        PROMPTS.swap(resolved)
-        _current_language = lang
-
-    logger.info("Prompt language set to '%s'", lang)
+    pass
 
 
 def get_prompt_language() -> str:
     """Return the currently active prompt language code."""
-    return _current_language
+    pass
 
 
 def reset_prompts() -> None:
     """Reset all prompts back to the default English templates."""
-    global _current_language
-    with _PROMPTS_LOCK:
-        PROMPTS.swap(_ENGLISH_PROMPTS)
-        _current_language = "en"
-    logger.info("Prompts reset to English defaults")
+    pass
 
 
 def get_available_languages() -> list[str]:
@@ -151,6 +101,4 @@ def get_available_languages() -> list[str]:
     Note: Languages that can be lazily loaded (like 'zh') may not appear
     here until they are first used or explicitly registered.
     """
-    # Include known lazy-loadable languages
-    all_langs = set(_PROMPT_LANGUAGES.keys()) | {"zh"}
-    return sorted(all_langs)
+    pass

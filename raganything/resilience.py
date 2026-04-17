@@ -90,57 +90,7 @@ def retry(
         def call_llm(prompt: str) -> str:
             return openai.ChatCompletion.create(...)
     """
-    if max_attempts < 1:
-        raise ValueError("max_attempts must be >= 1")
-    if base_delay < 0 or max_delay < 0:
-        raise ValueError("base_delay and max_delay must be >= 0")
-    if exponential_base <= 0:
-        raise ValueError("exponential_base must be > 0")
-
-    if retryable_exceptions is None:
-        retryable_exceptions = _DEFAULT_RETRYABLE
-
-    def decorator(func: F) -> F:
-        @functools.wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
-            last_exception: BaseException | None = None
-            for attempt in range(1, max_attempts + 1):
-                try:
-                    return func(*args, **kwargs)
-                except tuple(retryable_exceptions) as exc:
-                    last_exception = exc
-                    if attempt == max_attempts:
-                        logger.error(
-                            "%s failed after %d attempts: %s",
-                            func.__qualname__,
-                            max_attempts,
-                            exc,
-                        )
-                        raise
-                    delay = min(
-                        base_delay * (exponential_base ** (attempt - 1)),
-                        max_delay,
-                    )
-                    if jitter:
-                        import random
-
-                        delay *= 1.0 + random.uniform(0, 0.5)
-                    if on_retry is not None:
-                        on_retry(exc, attempt, delay)
-                    logger.warning(
-                        "%s attempt %d/%d failed (%s), retrying in %.1fs…",
-                        func.__qualname__,
-                        attempt,
-                        max_attempts,
-                        type(exc).__name__,
-                        delay,
-                    )
-                    time.sleep(delay)
-            raise last_exception  # type: ignore[misc]
-
-        return wrapper  # type: ignore[return-value]
-
-    return decorator
+    pass
 
 
 def async_retry(
@@ -175,59 +125,7 @@ def async_retry(
         async def call_llm_async(prompt: str) -> str:
             return await aclient.chat.completions.create(...)
     """
-    if max_attempts < 1:
-        raise ValueError("max_attempts must be >= 1")
-    if base_delay < 0 or max_delay < 0:
-        raise ValueError("base_delay and max_delay must be >= 0")
-    if exponential_base <= 0:
-        raise ValueError("exponential_base must be > 0")
-
-    if retryable_exceptions is None:
-        retryable_exceptions = _DEFAULT_RETRYABLE
-
-    def decorator(func: F) -> F:
-        @functools.wraps(func)
-        async def wrapper(*args: Any, **kwargs: Any) -> Any:
-            last_exception: BaseException | None = None
-            for attempt in range(1, max_attempts + 1):
-                try:
-                    return await func(*args, **kwargs)
-                except tuple(retryable_exceptions) as exc:
-                    last_exception = exc
-                    if attempt == max_attempts:
-                        logger.error(
-                            "%s failed after %d attempts: %s",
-                            func.__qualname__,
-                            max_attempts,
-                            exc,
-                        )
-                        raise
-                    delay = min(
-                        base_delay * (exponential_base ** (attempt - 1)),
-                        max_delay,
-                    )
-                    if jitter:
-                        import random
-
-                        delay *= 1.0 + random.uniform(0, 0.5)
-                    if on_retry is not None:
-                        result = on_retry(exc, attempt, delay)
-                        if asyncio.iscoroutine(result):
-                            await result
-                    logger.warning(
-                        "%s attempt %d/%d failed (%s), retrying in %.1fs…",
-                        func.__qualname__,
-                        attempt,
-                        max_attempts,
-                        type(exc).__name__,
-                        delay,
-                    )
-                    await asyncio.sleep(delay)
-            raise last_exception  # type: ignore[misc]
-
-        return wrapper  # type: ignore[return-value]
-
-    return decorator
+    pass
 
 
 class CircuitBreaker:
@@ -276,45 +174,15 @@ class CircuitBreaker:
     @property
     def state(self) -> str:
         """Current circuit breaker state."""
-        with self._lock:
-            if self._state == "open":
-                if time.time() - self._last_failure_time >= self.reset_timeout:
-                    self._state = "half-open"
-            return self._state
+        pass
 
     def record_success(self) -> None:
         """Record a successful call, resetting the breaker."""
-        with self._lock:
-            self._failure_count = 0
-            self._state = "closed"
-            self._trial_in_flight = False
+        pass
 
     def record_failure(self) -> None:
         """Record a failed call, potentially opening the breaker."""
-        with self._lock:
-            now = time.time()
-            if self._state == "half-open":
-                # A failed half-open probe should reopen the breaker immediately.
-                self._failure_count = self.failure_threshold
-            else:
-                # Only failures within the configured window contribute towards
-                # opening the breaker. A stale failure should not count against
-                # the next request burst.
-                if (
-                    self._last_failure_time
-                    and now - self._last_failure_time >= self.reset_timeout
-                ):
-                    self._failure_count = 0
-                self._failure_count += 1
-            self._last_failure_time = now
-            if self._failure_count >= self.failure_threshold:
-                self._state = "open"
-                self._trial_in_flight = False
-                logger.warning(
-                    "Circuit breaker '%s' opened after %d failures",
-                    self.name,
-                    self._failure_count,
-                )
+        pass
 
     def _acquire_permission(self) -> None:
         """Check and update state before executing a protected call.
@@ -324,74 +192,17 @@ class CircuitBreaker:
           trial call and reject additional concurrent calls.
         - If the breaker is closed, allow the call.
         """
-        with self._lock:
-            # Transition open -> half-open if timeout has elapsed.
-            if self._state == "open":
-                if time.time() - self._last_failure_time >= self.reset_timeout:
-                    self._state = "half-open"
-
-            if self._state == "open":
-                # Still within timeout window.
-                raise self.CircuitBreakerOpen(
-                    f"Circuit breaker '{self.name}' is open — call rejected"
-                )
-
-            if self._state == "half-open":
-                if self._trial_in_flight:
-                    # Single-flight: only one trial call is allowed.
-                    raise self.CircuitBreakerOpen(
-                        f"Circuit breaker '{self.name}' is half-open — trial in progress"
-                    )
-                # Mark that a trial call is now in-flight.
-                self._trial_in_flight = True
-                return
-
-            # closed: allow call as normal.
-            return
+        pass
 
     def __call__(self, func: F) -> F:
         """Use as a decorator around sync functions."""
 
         @functools.wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            self._acquire_permission()
-            try:
-                result = func(*args, **kwargs)
-                self.record_success()
-                return result
-            except tuple(self._failure_exceptions):
-                # Upstream / transient failure: contributes towards opening
-                # the breaker.
-                self.record_failure()
-                raise
-            except Exception:
-                # Application bug or non-transient local error: do not treat as
-                # upstream instability. We still need to clear the half-open
-                # trial gate so that future calls are not permanently blocked.
-                with self._lock:
-                    if self._state == "half-open":
-                        self._trial_in_flight = False
-                raise
+            pass
 
         return wrapper  # type: ignore[return-value]
 
     def async_call(self, func: F) -> F:
         """Use as a decorator around async functions."""
-
-        @functools.wraps(func)
-        async def wrapper(*args: Any, **kwargs: Any) -> Any:
-            self._acquire_permission()
-            try:
-                result = await func(*args, **kwargs)
-                self.record_success()
-                return result
-            except tuple(self._failure_exceptions):
-                self.record_failure()
-                raise
-            except Exception:
-                with self._lock:
-                    if self._state == "half-open":
-                        self._trial_in_flight = False
-                raise
-
-        return wrapper  # type: ignore[return-value]
+        pass

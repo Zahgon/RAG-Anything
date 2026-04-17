@@ -130,23 +130,9 @@ class RAGAnythingConfig:
         .. deprecated::
            Use `parse_method` instead. This property will be removed in a future version.
         """
-        import warnings
-
-        warnings.warn(
-            "mineru_parse_method is deprecated. Use parse_method instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self.parse_method
+        pass
 
     @mineru_parse_method.setter
     def mineru_parse_method(self, value: str):
         """Setter for backward compatibility"""
-        import warnings
-
-        warnings.warn(
-            "mineru_parse_method is deprecated. Use parse_method instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        self.parse_method = value
+        pass

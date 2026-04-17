@@ -46,16 +46,7 @@ class ProcessingEvent:
 
     def to_dict(self) -> Dict[str, Any]:
         """Serialise to a plain dictionary."""
-        return {
-            "event_type": self.event_type,
-            "timestamp": self.timestamp,
-            "file_path": self.file_path,
-            "doc_id": self.doc_id,
-            "stage": self.stage,
-            "details": self.details,
-            "duration_seconds": self.duration_seconds,
-            "error": self.error,
-        }
+        pass
 
 
 class ProcessingCallback:
@@ -214,13 +205,12 @@ class MetricsCallback(ProcessingCallback):
         duration_seconds: float = 0.0,
         **kw: Any,
     ) -> None:
-        self.metrics["total_content_blocks"] += content_blocks
-        self.metrics["total_parse_time"] += duration_seconds
+        pass
 
     def on_text_insert_complete(
         self, file_path: str, duration_seconds: float = 0.0, **kw: Any
     ) -> None:
-        self.metrics["total_insert_time"] += duration_seconds
+        pass
 
     def on_multimodal_complete(
         self,
@@ -229,11 +219,10 @@ class MetricsCallback(ProcessingCallback):
         duration_seconds: float = 0.0,
         **kw: Any,
     ) -> None:
-        self.metrics["total_multimodal_items"] += processed_count
-        self.metrics["total_multimodal_time"] += duration_seconds
+        pass
 
     def on_document_complete(self, file_path: str, **kw: Any) -> None:
-        self.metrics["documents_processed"] += 1
+        pass
 
     def on_document_error(
         self,
@@ -242,49 +231,25 @@ class MetricsCallback(ProcessingCallback):
         stage: str = "",
         **kw: Any,
     ) -> None:
-        self.metrics["documents_failed"] += 1
-        self.metrics["errors"].append(
-            {"file": file_path, "error": str(error), "stage": stage}
-        )
+        pass
 
     def on_query_complete(
         self, query: str, duration_seconds: float = 0.0, **kw: Any
     ) -> None:
-        self.metrics["queries_executed"] += 1
-        self.metrics["total_query_time"] += duration_seconds
+        pass
 
     def on_query_error(
         self, query: str, error: BaseException | str = "", **kw: Any
     ) -> None:
-        self.metrics["errors"].append(
-            {"file": None, "error": str(error), "stage": "query"}
-        )
+        pass
 
     def summary(self) -> str:
         """Return a human-readable summary of collected metrics."""
-        m = self.metrics
-        lines = [
-            "RAGAnything Processing Metrics",
-            "=" * 40,
-            f"Documents processed : {m['documents_processed']}",
-            f"Documents failed    : {m['documents_failed']}",
-            f"Content blocks      : {m['total_content_blocks']}",
-            f"Multimodal items    : {m['total_multimodal_items']}",
-            f"Parse time          : {m['total_parse_time']:.2f}s",
-            f"Insert time         : {m['total_insert_time']:.2f}s",
-            f"Multimodal time     : {m['total_multimodal_time']:.2f}s",
-            f"Queries executed    : {m['queries_executed']}",
-            f"Query time          : {m['total_query_time']:.2f}s",
-        ]
-        if m["errors"]:
-            lines.append(f"Errors              : {len(m['errors'])}")
-            for err in m["errors"][:5]:
-                lines.append(f"  - [{err['stage']}] {err['file']}: {err['error']}")
-        return "\n".join(lines)
+        pass
 
     def reset(self) -> None:
         """Reset all collected metrics."""
-        self.__init__()
+        pass
 
 
 class CallbackManager:
@@ -310,17 +275,11 @@ class CallbackManager:
         Raises:
             TypeError: If *callback* is not a :class:`ProcessingCallback`.
         """
-        if not isinstance(callback, ProcessingCallback):
-            raise TypeError(
-                f"Expected ProcessingCallback instance, got {type(callback).__name__}"
-            )
-        with self._lock:
-            self._callbacks.append(callback)
+        pass
 
     def unregister(self, callback: ProcessingCallback) -> None:
         """Remove a previously registered callback."""
-        with self._lock:
-            self._callbacks.remove(callback)
+        pass
 
     def enable_event_log(self, enabled: bool = True) -> None:
         """Enable or disable internal event logging.
@@ -328,19 +287,16 @@ class CallbackManager:
         When enabled, every dispatched event is recorded in
         :attr:`event_log` for later inspection.
         """
-        with self._lock:
-            self._log_events = enabled
+        pass
 
     @property
     def event_log(self) -> List[ProcessingEvent]:
         """Read-only access to the internal event log."""
-        with self._lock:
-            return list(self._event_log)
+        pass
 
     def clear_event_log(self) -> None:
         """Clear the internal event log."""
-        with self._lock:
-            self._event_log.clear()
+        pass
 
     def dispatch(self, event_name: str, **kwargs: Any) -> None:
         """Dispatch an event to all registered callbacks.
@@ -349,29 +305,4 @@ class CallbackManager:
             event_name: Name of the callback method (e.g., ``"on_parse_start"``).
             **kwargs: Arguments forwarded to the callback method.
         """
-        with self._lock:
-            callbacks_snapshot = list(self._callbacks)
-            log_events = self._log_events
-            if log_events:
-                event = ProcessingEvent(
-                    event_type=event_name,
-                    file_path=kwargs.get("file_path"),
-                    doc_id=kwargs.get("doc_id"),
-                    stage=kwargs.get("stage"),
-                    details=kwargs,
-                    duration_seconds=kwargs.get("duration_seconds"),
-                    error=str(kwargs["error"]) if "error" in kwargs else None,
-                )
-                self._event_log.append(event)
-
-        for cb in callbacks_snapshot:
-            handler = getattr(cb, event_name, None)
-            if handler is not None:
-                try:
-                    handler(**kwargs)
-                except Exception:
-                    logger.exception(
-                        "Error in callback %s.%s",
-                        type(cb).__name__,
-                        event_name,
-                    )
+        pass
